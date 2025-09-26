@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+
 interface ConversionJob {
   id: string;
   status: 'pending' | 'running' | 'failed' | 'completed';
@@ -59,6 +60,7 @@ export default function Home() {
     []
   );
 
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedFile) {
@@ -70,6 +72,7 @@ export default function Home() {
 
     setIsSubmitting(true);
     setErrorMessage(null);
+
     try {
       const response = await fetch('/api/jobs', {
         method: 'POST',
@@ -87,6 +90,7 @@ export default function Home() {
     } catch (error) {
       console.error(error);
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create job');
+
     } finally {
       setIsSubmitting(false);
     }
@@ -347,6 +351,7 @@ export default function Home() {
         .jobs header span {
           font-size: 0.95rem;
           color: rgba(148, 163, 184, 0.85);
+
         }
 
         .jobs ul {

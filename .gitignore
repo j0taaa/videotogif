@@ -1,0 +1,17 @@
+# Node
+node_modules/
+.npm
+
+# Next.js
+.next/
+
+# Python
+__pycache__/
+*.pyc
+
+# Mac
+.DS_Store
+
+# Env files
+.env
+.env.*

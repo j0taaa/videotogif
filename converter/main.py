@@ -1,0 +1,113 @@
+import json
+import os
+import subprocess
+import tempfile
+from contextlib import suppress
+from typing import Optional
+
+from obs import ObsClient
+
+
+def get_env(name: str, required: bool = True, default: Optional[str] = None) -> str:
+    value = os.getenv(name, default)
+    if required and not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value or ""
+
+
+def download_object(client: ObsClient, bucket: str, key: str, path: str) -> None:
+    resp = client.getObject(bucket, key, downloadPath=path)
+    if resp.status >= 300:
+        raise RuntimeError(f"Failed to download object {key}: {resp.errorMessage}")
+
+
+def upload_object(client: ObsClient, bucket: str, key: str, path: str) -> None:
+    resp = client.putFile(bucket, key, file_path=path)
+    if resp.status >= 300:
+        raise RuntimeError(f"Failed to upload object {key}: {resp.errorMessage}")
+
+
+def create_signed_url(client: ObsClient, bucket: str, key: str, expires: int = 3600) -> str:
+    resp = client.createSignedUrl("GET", bucket, key, expires=expires)
+    return resp.signedUrl
+
+
+def convert_to_gif(source: str, target: str) -> None:
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        source,
+        "-vf",
+        "fps=10,scale=480:-1:flags=lanczos",
+        "-loop",
+        "0",
+        target,
+    ]
+    process = subprocess.run(command, check=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if process.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
+
+
+def notify_frontend(callback_url: Optional[str], payload: dict) -> None:
+    if not callback_url:
+        return
+
+    import requests
+
+    response = requests.post(callback_url, json=payload, timeout=10)
+    if response.status_code >= 300:
+        raise RuntimeError(f"Callback failed with status {response.status_code}: {response.text}")
+
+
+def main() -> None:
+    access_key = get_env("OBS_ACCESS_KEY_ID")
+    secret_key = get_env("OBS_SECRET_ACCESS_KEY")
+    endpoint = get_env("OBS_ENDPOINT")
+    bucket = get_env("OBS_BUCKET_NAME")
+    source_key = get_env("SOURCE_OBJECT_KEY")
+    target_key = get_env("TARGET_OBJECT_KEY")
+    job_id = get_env("JOB_ID")
+    callback_url = os.getenv("CALLBACK_URL")
+
+    client = ObsClient(access_key_id=access_key, secret_access_key=secret_key, server=endpoint)
+
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source_path = os.path.join(tmpdir, "source")
+            target_path = os.path.join(tmpdir, "target.gif")
+
+            download_object(client, bucket, source_key, source_path)
+            convert_to_gif(source_path, target_path)
+            upload_object(client, bucket, target_key, target_path)
+
+            download_url = create_signed_url(client, bucket, target_key)
+
+        payload = {
+            "jobId": job_id,
+            "status": "completed",
+            "downloadUrl": download_url,
+            "targetKey": target_key,
+        }
+
+        try:
+            notify_frontend(callback_url, payload)
+        except Exception as error:  # noqa: BLE001
+            error_payload = {
+                "jobId": job_id,
+                "status": "failed",
+                "errorMessage": str(error),
+            }
+            if callback_url:
+                with suppress(Exception):
+                    notify_frontend(callback_url, error_payload)
+            raise
+
+        print(json.dumps(payload))
+    finally:
+        with suppress(Exception):
+            client.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -21,6 +21,23 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function requireEnvWithFallback(primary: string, fallbacks: string[]): string {
+  const value = process.env[primary];
+  if (value) {
+    return value;
+  }
+
+  for (const fallback of fallbacks) {
+    const fallbackValue = process.env[fallback];
+    if (fallbackValue) {
+      return fallbackValue;
+    }
+  }
+
+  const sources = [primary, ...fallbacks].join(' or ');
+  throw new MissingConfigurationError(`${sources} environment variable is not configured`);
+}
+
 function encodeRfc3986(value: string) {
   return encodeURIComponent(value)
     .replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
@@ -133,8 +150,8 @@ function collectJobEnv(params: CreateJobParams) {
 }
 
 export async function createCciJob(params: CreateJobParams): Promise<CreateJobResult> {
-  const accessKey = requireEnv('HUAWEI_CLOUD_AK');
-  const secretKey = requireEnv('HUAWEI_CLOUD_SK');
+  const accessKey = requireEnvWithFallback('HUAWEI_CLOUD_AK', ['OBS_ACCESS_KEY_ID']);
+  const secretKey = requireEnvWithFallback('HUAWEI_CLOUD_SK', ['OBS_SECRET_ACCESS_KEY']);
   const projectId = requireEnv('HUAWEI_CLOUD_PROJECT_ID');
   const namespace = process.env.CCI_NAMESPACE ?? 'default';
   const region = process.env.CCI_REGION;

@@ -28,14 +28,14 @@ Configure the following variables when deploying the frontend image:
 | Variable | Description |
 | --- | --- |
 | `OBS_ENDPOINT` | OBS endpoint (e.g. `https://obs.eu-west-101.myhuaweicloud.com`). |
-| `OBS_ACCESS_KEY_ID` | Access key ID for OBS. |
-| `OBS_SECRET_ACCESS_KEY` | Secret access key for OBS. |
+| `OBS_ACCESS_KEY_ID` | Access key ID for OBS (can be the same AK used for other Huawei Cloud services). |
+| `OBS_SECRET_ACCESS_KEY` | Secret access key for OBS (can be the same SK used for other Huawei Cloud services). |
 | `OBS_BUCKET_NAME` | OBS bucket that stores uploads and generated GIFs. |
 | `OBS_UPLOAD_PREFIX` | (Optional) Object key prefix for uploaded videos, defaults to `uploads/`. |
 | `OBS_OUTPUT_PREFIX` | (Optional) Object key prefix for generated GIFs, defaults to `gifs/`. |
 | `PUBLIC_BASE_URL` | Public URL of the frontend (used to build job callbacks). |
-| `HUAWEI_CLOUD_AK` | Access key ID used to sign Huawei Cloud API requests. |
-| `HUAWEI_CLOUD_SK` | Secret access key used to sign Huawei Cloud API requests. |
+| `HUAWEI_CLOUD_AK` | Access key ID used to sign Huawei Cloud API requests. Falls back to `OBS_ACCESS_KEY_ID` when unset. |
+| `HUAWEI_CLOUD_SK` | Secret access key used to sign Huawei Cloud API requests. Falls back to `OBS_SECRET_ACCESS_KEY` when unset. |
 | `HUAWEI_CLOUD_PROJECT_ID` | Project ID where the CCI namespace resides. |
 | `CCI_REGION` | Region of the CCI endpoint (for example `eu-west-101`). Set `CCI_API_ENDPOINT` instead if you use a custom domain. |
 | `CCI_API_ENDPOINT` | (Optional) Override for the CCI API endpoint, e.g. `https://cci.eu-west-101.myhuaweicloud.com`. |

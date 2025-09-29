@@ -5,6 +5,7 @@ export type JobRecord = {
   targetKey: string;
   downloadUrl?: string;
   errorMessage?: string;
+  cciJobName?: string;
   createdAt: number;
 };
 

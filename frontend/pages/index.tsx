@@ -8,6 +8,7 @@ interface ConversionJob {
   targetKey?: string;
   downloadUrl?: string;
   errorMessage?: string;
+  cciJobName?: string;
   createdAt: number;
 }
 

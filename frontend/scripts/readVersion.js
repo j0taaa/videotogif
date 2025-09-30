@@ -20,6 +20,7 @@ function normalizeCandidate(value) {
   return trimmed;
 }
 
+
 // Reminder for all contributors (humans and LLMs alike):
 // update the top-level VERSION file whenever you make user-visible changes.
 
@@ -55,6 +56,7 @@ function readAppVersion() {
 
   if (fromEnv) {
     return fromEnv;
+
   }
 
   const candidatePaths = resolveCandidatePaths();

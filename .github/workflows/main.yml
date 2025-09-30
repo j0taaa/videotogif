@@ -14,6 +14,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Read application version
+      run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
+
     - name: Log in to Huawei Cloud SWR
       uses: docker/login-action@v3
       with:
@@ -26,11 +29,15 @@ jobs:
       with:
         context: ./frontend
         push: true
-        tags: swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-frontend:latest
+        tags: |
+          swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-frontend:latest
+          swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-frontend:${{ env.VERSION }}
 
     - name: Build and push converter image
       uses: docker/build-push-action@v5
       with:
         context: ./converter
         push: true
-        tags: swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-converter:latest
+        tags: |
+          swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-converter:latest
+          swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-converter:${{ env.VERSION }}

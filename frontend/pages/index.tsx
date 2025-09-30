@@ -18,6 +18,7 @@ export default function Home() {
   const [jobs, setJobs] = useState<ConversionJob[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? 'unknown';
 
   useEffect(() => {
     let isActive = true;
@@ -99,6 +100,7 @@ export default function Home() {
 
   return (
     <div className="page">
+      <span className="version-badge">v{appVersion}</span>
       <div className="backdrop" aria-hidden />
       <main className="layout">
         <section className="hero">
@@ -185,6 +187,19 @@ export default function Home() {
           color: #f8fafc;
           font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           overflow: hidden;
+        }
+
+        .version-badge {
+          position: absolute;
+          top: 1.5rem;
+          right: 1.5rem;
+          padding: 0.35rem 0.75rem;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.7);
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          font-size: 0.8rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         .backdrop {

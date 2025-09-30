@@ -1,0 +1,35 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to main branch
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Huawei Cloud SWR
+      uses: docker/login-action@v3
+      with:
+        registry: swr.sa-brazil-1.myhuaweicloud.com
+        username: ${{ secrets.SWR_USERNAME }}
+        password: ${{ secrets.SWR_PASSWORD }}
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-frontend:latest
+
+    - name: Build and push converter image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./converter
+        push: true
+        tags: swr.sa-brazil-1.myhuaweicloud.com/videotogif/videotogif-converter:latest

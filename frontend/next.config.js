@@ -17,6 +17,9 @@ console.log(`Frontend server starting with version ${appVersion}`);
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+  },
 };
 
 module.exports = nextConfig;

@@ -13,6 +13,7 @@ try {
 
 console.log(`Frontend server starting with version ${appVersion}`);
 
+// Reminder: update the top-level VERSION file when making user-visible changes.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

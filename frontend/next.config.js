@@ -1,19 +1,17 @@
-const fs = require('fs');
-const path = require('path');
+const { readAppVersion, FALLBACK_VERSION } = require('./scripts/readVersion');
 
-const versionFilePath = path.join(__dirname, '..', 'VERSION');
+const appVersion = readAppVersion();
 
-let appVersion = 'unknown';
-
-try {
-  appVersion = fs.readFileSync(versionFilePath, 'utf8').trim();
-} catch (error) {
-  console.warn(`Unable to read application version from ${versionFilePath}:`, error);
+if (appVersion && appVersion !== FALLBACK_VERSION) {
+  console.log(`Loaded application version ${appVersion}`);
+} else {
+  console.warn('Unable to determine application version during configuration.');
 }
 
 console.log(`Frontend server starting with version ${appVersion}`);
 
 // Reminder: update the top-level VERSION file when making user-visible changes.
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

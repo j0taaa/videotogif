@@ -27,6 +27,7 @@ declare module 'esdk-obs-nodejs' {
     SignedUrl: string;
   }
 
+
   class ObsClient {
     constructor(options: ObsClientOptions);
 
@@ -37,6 +38,7 @@ declare module 'esdk-obs-nodejs' {
     deleteObject(params: Record<string, unknown>, callback: Callback): void;
     deleteObjects(params: Record<string, unknown>, callback: Callback): void;
     createSignedUrlSync(params: Record<string, unknown>): SignedUrlResult;
+
     close(): void;
   }
 

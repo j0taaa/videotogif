@@ -3,6 +3,24 @@ const path = require('path');
 
 const FALLBACK_VERSION = 'unknown';
 
+function normalizeCandidate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.toLowerCase() === FALLBACK_VERSION) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+
 // Reminder for all contributors (humans and LLMs alike):
 // update the top-level VERSION file whenever you make user-visible changes.
 
@@ -32,9 +50,13 @@ function readVersionFromFile(filePath) {
 }
 
 function readAppVersion() {
-  const fromEnv = process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION;
-  if (fromEnv && fromEnv.trim().length > 0) {
-    return fromEnv.trim();
+  const fromEnv =
+    normalizeCandidate(process.env.APP_VERSION) ||
+    normalizeCandidate(process.env.NEXT_PUBLIC_APP_VERSION);
+
+  if (fromEnv) {
+    return fromEnv;
+
   }
 
   const candidatePaths = resolveCandidatePaths();

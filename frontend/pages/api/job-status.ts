@@ -36,35 +36,85 @@ function extractJobId(body: Record<string, unknown>): string | null {
     if (typeof candidate === 'string' && candidate.trim()) {
       return candidate;
     }
+
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate.toString();
+    }
   }
 
   return null;
 }
 
 function normalizeStatus(value: unknown): JobStatus | null {
+  if (value && typeof value === 'object') {
+    const nested = value as Record<string, unknown>;
+    const nestedCandidates = [nested['status'], nested['state'], nested['phase']];
+
+    for (const candidate of nestedCandidates) {
+      const resolved = normalizeStatus(candidate);
+      if (resolved) {
+        return resolved;
+      }
+    }
+
+    return null;
+  }
+
   if (typeof value !== 'string') {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return normalizeStatus(value.toString());
+    }
     return null;
   }
 
   const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  const collapsed = normalized.replace(/[^a-z]/g, '');
+
   const mapping: Record<string, JobStatus> = {
     pending: 'pending',
-    queued: 'pending',
     queue: 'pending',
+    queued: 'pending',
+    waiting: 'pending',
+    accepted: 'pending',
+    scheduling: 'pending',
+    initializing: 'running',
+    starting: 'running',
+    started: 'running',
     running: 'running',
     processing: 'running',
-    in_progress: 'running',
-    'in-progress': 'running',
+    inprogress: 'running',
+    executing: 'running',
+    active: 'running',
+    jobrunning: 'running',
+    jobstarted: 'running',
     failed: 'failed',
     failure: 'failed',
     error: 'failed',
+    errored: 'failed',
+    jobfailed: 'failed',
+    joberror: 'failed',
+    timeout: 'failed',
+    timedout: 'failed',
+    cancelled: 'failed',
+    canceled: 'failed',
+    aborted: 'failed',
     completed: 'completed',
     complete: 'completed',
     succeeded: 'completed',
     success: 'completed',
+    done: 'completed',
+    finished: 'completed',
+    jobsucceeded: 'completed',
+    jobsuccess: 'completed',
+    jobcompleted: 'completed',
+    jobfinished: 'completed',
   };
 
-  return mapping[normalized] ?? null;
+  return mapping[collapsed] ?? mapping[normalized] ?? null;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<{ message: string }>) {
@@ -76,9 +126,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   const body = coerceBody(req.body);
   const jobId = extractJobId(body);
-  const status = normalizeStatus(
-    body['status'] ?? body['state'] ?? body['jobStatus'] ?? (body['job'] as Record<string, unknown> | undefined)?.status
-  );
+
+  const statusCandidates: unknown[] = [
+    body['status'],
+    body['state'],
+    body['jobStatus'],
+    body['job_status'],
+    body['jobState'],
+    body['job_state'],
+    body['phase'],
+  ];
+
+  const jobPayload = body['job'];
+  if (jobPayload && typeof jobPayload === 'object') {
+    const jobBody = jobPayload as Record<string, unknown>;
+    statusCandidates.push(
+      jobBody['status'],
+      jobBody['state'],
+      jobBody['jobStatus'],
+      jobBody['job_status'],
+      jobBody['phase']
+    );
+  }
+
+  const status = statusCandidates.reduce<JobStatus | null>((resolved, candidate) => {
+    if (resolved) {
+      return resolved;
+    }
+
+    return normalizeStatus(candidate);
+  }, null);
   let { downloadUrl, errorMessage, targetKey } = body as {
     downloadUrl?: unknown;
     errorMessage?: unknown;

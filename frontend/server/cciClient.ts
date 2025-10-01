@@ -1,4 +1,6 @@
-import crypto from 'crypto';
+import { BasicCredentials } from '@huaweicloud/huaweicloud-sdk-core/auth/BasicCredentials';
+import { ClientBuilder } from '@huaweicloud/huaweicloud-sdk-core/ClientBuilder';
+import type { HcClient } from '@huaweicloud/huaweicloud-sdk-core/HcClient';
 
 export type CreateJobParams = {
   jobId: string;
@@ -36,75 +38,6 @@ function requireEnvWithFallback(primary: string, fallbacks: string[]): string {
 
   const sources = [primary, ...fallbacks].join(' or ');
   throw new MissingConfigurationError(`${sources} environment variable is not configured`);
-}
-
-function encodeRfc3986(value: string) {
-  return encodeURIComponent(value)
-    .replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
-    .replace(/%2F/g, '/');
-}
-
-function canonicalizePath(pathname: string) {
-  if (!pathname) {
-    return '/';
-  }
-
-  return pathname
-    .split('/')
-    .map((segment) => encodeRfc3986(segment))
-    .join('/');
-}
-
-function canonicalizeQuery(searchParams: URLSearchParams) {
-  const params: string[] = [];
-
-  for (const [key, value] of Array.from(searchParams.entries()).sort()) {
-    params.push(`${encodeRfc3986(key)}=${encodeRfc3986(value)}`);
-  }
-
-  return params.join('&');
-}
-
-function hashPayload(payload: string) {
-  return crypto.createHash('sha256').update(payload).digest('hex');
-}
-
-function hmacSHA256(key: string, message: string) {
-  return crypto.createHmac('sha256', key).update(message).digest('hex');
-}
-
-function buildAuthorization(
-  method: string,
-  url: URL,
-  headers: Record<string, string>,
-  payload: string,
-  accessKey: string,
-  secretKey: string
-) {
-  const canonicalUri = canonicalizePath(url.pathname);
-  const canonicalQuery = canonicalizeQuery(url.searchParams);
-
-  const headerEntries = Object.entries(headers)
-    .map(([name, value]) => [name.toLowerCase(), value.trim().replace(/\s+/g, ' ')] as const)
-    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-
-  const canonicalHeaders = headerEntries.map(([name, value]) => `${name}:${value}`).join('\n');
-  const signedHeaders = headerEntries.map(([name]) => name).join(';');
-
-  const payloadHash = hashPayload(payload);
-  const canonicalRequest = [method.toUpperCase(), canonicalUri, canonicalQuery, `${canonicalHeaders}\n`, signedHeaders, payloadHash]
-    .join('\n');
-
-  const sdkDate = headers['x-sdk-date'];
-  if (!sdkDate) {
-    throw new Error('x-sdk-date header is required for signing');
-  }
-
-  const hashedCanonicalRequest = hashPayload(canonicalRequest);
-  const stringToSign = `SDK-HMAC-SHA256\n${sdkDate}\n${hashedCanonicalRequest}`;
-  const signature = hmacSHA256(secretKey, stringToSign);
-
-  return `SDK-HMAC-SHA256 Access=${accessKey}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 }
 
 function buildJobName(jobId: string) {
@@ -223,38 +156,35 @@ export async function createCciJob(params: CreateJobParams): Promise<CreateJobRe
     (payload.spec as any).ttlSecondsAfterFinished = ttlSecondsAfterFinished;
   }
 
-  const url = new URL(`/apis/batch/v1/namespaces/${encodeURIComponent(namespace)}/jobs`, baseEndpoint);
-  const body = JSON.stringify(payload);
+  const credentials = new BasicCredentials()
+    .withAk(accessKey)
+    .withSk(secretKey)
+    .withProjectId(projectId);
 
-  const sdkDate = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '') + 'Z';
+  const client = new ClientBuilder<HcClient>((hcClient) => hcClient)
+    .withCredential(credentials)
+    .withEndpoint(baseEndpoint)
+    .build();
 
-  const headers: Record<string, string> = {
-    host: url.host,
-    'content-type': 'application/json',
-    'x-project-id': projectId,
-    'x-sdk-date': sdkDate,
-  };
+  const userAgent = process.env.CCI_USER_AGENT;
+  const path = `/apis/batch/v1/namespaces/${encodeURIComponent(namespace)}/jobs`;
 
-  const authorization = buildAuthorization('POST', url, headers, body, accessKey, secretKey);
-
-  const requestHeaders = new Headers();
-  requestHeaders.set('Content-Type', 'application/json');
-  requestHeaders.set('X-Project-Id', projectId);
-  requestHeaders.set('X-Sdk-Date', sdkDate);
-  requestHeaders.set('Authorization', authorization);
-  if (process.env.CCI_USER_AGENT) {
-    requestHeaders.set('User-Agent', process.env.CCI_USER_AGENT);
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: requestHeaders,
-    body,
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`CCI job creation failed: ${response.status} ${response.statusText} - ${text}`);
+  try {
+    await client.sendRequest({
+      method: 'POST',
+      url: path,
+      contentType: 'application/json',
+      headers: {
+        'X-Project-Id': projectId,
+        ...(userAgent ? { 'User-Agent': userAgent } : {}),
+      },
+      queryParams: {},
+      pathParams: {},
+      data: payload as Record<string, any>,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : JSON.stringify(error);
+    throw new Error(`CCI job creation failed: ${message}`);
   }
 
   return { jobName };

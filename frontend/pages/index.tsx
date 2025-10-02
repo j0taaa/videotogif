@@ -82,7 +82,18 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const message = await response.text();
+        const rawMessage = await response.text();
+        let parsedMessage: string | null = null;
+        try {
+          const parsed = JSON.parse(rawMessage);
+          if (parsed && typeof parsed === 'object' && 'message' in parsed) {
+            parsedMessage = String(parsed.message);
+          }
+        } catch (_error) {
+          // Ignore JSON parse errors and fall back to using the raw message.
+        }
+
+        const message = parsedMessage || (rawMessage && !rawMessage.startsWith('<') ? rawMessage : null);
         throw new Error(message || 'Unable to create conversion job');
       }
 

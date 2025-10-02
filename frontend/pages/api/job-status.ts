@@ -221,7 +221,6 @@ function normalizeStatus(value: unknown): JobStatus | null {
     jobcompleted: 'completed',
     jobfinished: 'completed',
     successful: 'completed',
-
   };
 
   return mapping[collapsed] ?? mapping[normalized] ?? null;

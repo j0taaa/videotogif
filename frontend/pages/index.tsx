@@ -183,7 +183,7 @@ export default function Home() {
           padding: 4rem 1.5rem 6rem;
           display: flex;
           justify-content: center;
-          background-color: #050816;
+          background-color: green;
           color: #f8fafc;
           font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           overflow: hidden;

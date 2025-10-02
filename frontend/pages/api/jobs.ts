@@ -14,6 +14,36 @@ export const config = {
 
 type JobsResponse = ReturnType<typeof retrieveJobs>;
 
+class ServiceConfigurationError extends Error {
+  constructor(public readonly missingVariables: string[]) {
+    super(
+      missingVariables.length > 0
+        ? `Conversion service is not fully configured. Missing: ${missingVariables.join(', ')}`
+        : 'Conversion service is not fully configured.'
+    );
+    this.name = 'ServiceConfigurationError';
+  }
+}
+
+function listMissingConfiguration(): string[] {
+  const requiredVariables = [
+    'OBS_ENDPOINT',
+    'OBS_ACCESS_KEY_ID',
+    'OBS_SECRET_ACCESS_KEY',
+    'OBS_BUCKET_NAME',
+    'HUAWEI_CLOUD_PROJECT_ID',
+    'CCI_JOB_IMAGE',
+  ];
+
+  const missing = requiredVariables.filter((variable) => !process.env[variable]);
+
+  if (!process.env.CCI_REGION && !process.env.CCI_API_ENDPOINT) {
+    missing.push('CCI_REGION or CCI_API_ENDPOINT');
+  }
+
+  return missing;
+}
+
 async function parseForm(req: NextApiRequest) {
   console.log('[api/jobs] Starting multipart form parsing');
   const form = formidable({ multiples: false });
@@ -94,6 +124,11 @@ export default async function handler(
   try {
     const { buffer, filename } = await parseForm(req);
 
+    const missingConfiguration = listMissingConfiguration();
+    if (missingConfiguration.length > 0) {
+      throw new ServiceConfigurationError(missingConfiguration);
+    }
+
     const timestamp = Date.now();
     const sourceKey = `${process.env.OBS_UPLOAD_PREFIX ?? 'uploads/'}${timestamp}-${filename}`;
     const targetKey = `${process.env.OBS_OUTPUT_PREFIX ?? 'gifs/'}${timestamp}-${filename.replace(/\.[^.]+$/, '')}.gif`;
@@ -134,6 +169,7 @@ export default async function handler(
     console.log('[api/jobs] Response sent for job creation request', { jobId });
   } catch (error) {
     console.error(error);
+    const statusCode = error instanceof ServiceConfigurationError ? 503 : 500;
     const message = error instanceof Error ? error.message : 'Unable to create conversion job';
 
     if (jobId) {
@@ -145,7 +181,7 @@ export default async function handler(
       }
     }
 
-    res.status(500).json({ message });
-    console.error('[api/jobs] Job creation request failed', { jobId, message });
+    res.status(statusCode).json({ message });
+    console.error('[api/jobs] Job creation request failed', { jobId, message, statusCode });
   }
 }

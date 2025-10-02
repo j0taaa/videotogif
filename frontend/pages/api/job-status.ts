@@ -125,6 +125,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   const body = coerceBody(req.body);
+  console.log('[api/job-status] Received callback payload', {
+    method: req.method,
+    hasBody: Boolean(req.body),
+    rawBodyType: typeof req.body,
+    normalizedKeys: Object.keys(body),
+  });
   const jobId = extractJobId(body);
 
   const statusCandidates: unknown[] = [
@@ -156,6 +162,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     return normalizeStatus(candidate);
   }, null);
+  console.log('[api/job-status] Derived job identifiers', {
+    jobId,
+    statusCandidatesCount: statusCandidates.length,
+    resolvedStatus: status,
+  });
   let { downloadUrl, errorMessage, targetKey } = body as {
     downloadUrl?: unknown;
     errorMessage?: unknown;
@@ -163,6 +174,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   };
 
   if (!jobId || !status) {
+    console.warn('[api/job-status] Rejecting callback due to missing identifiers', {
+      jobIdPresent: Boolean(jobId),
+      statusResolved: Boolean(status),
+      receivedKeys: Object.keys(body),
+    });
     res.status(400).json({ message: 'jobId and a valid status are required' });
     return;
   }
@@ -176,6 +192,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   if (status === 'completed' && !resolvedDownloadUrl && targetKeyString) {
     try {
       resolvedDownloadUrl = createSignedUrl(targetKeyString);
+      console.log('[api/job-status] Generated signed download URL for completed job', {
+        jobId,
+        targetKey: targetKeyString,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -188,9 +208,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       errorMessage: errorMessageString,
     });
 
+    console.log('[api/job-status] Job updated successfully', {
+      jobId,
+      status,
+      hasDownloadUrl: Boolean(resolvedDownloadUrl),
+      hasErrorMessage: Boolean(errorMessageString),
+    });
+
     res.status(200).json({ message: 'Job updated' });
   } catch (error) {
     console.error(error);
+    console.error('[api/job-status] Failed to update job store', {
+      jobId,
+      status,
+      error,
+    });
     res.status(500).json({ message: 'Unable to update job' });
   }
 }

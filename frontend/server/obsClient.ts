@@ -4,6 +4,7 @@ let cachedClient: ObsClient | null = null;
 
 function getObsClient() {
   if (cachedClient) {
+    console.log('[obsClient] Reusing cached OBS client instance');
     return cachedClient;
   }
 
@@ -15,6 +16,13 @@ function getObsClient() {
   if (!accessKeyId || !secretAccessKey || !server || !bucket) {
     throw new Error('OBS credentials are not fully configured');
   }
+
+  console.log('[obsClient] Initializing new OBS client', {
+    hasAccessKey: Boolean(accessKeyId),
+    hasSecretAccessKey: Boolean(secretAccessKey),
+    server,
+    bucket,
+  });
 
   cachedClient = new ObsClient({
     access_key_id: accessKeyId,
@@ -29,6 +37,12 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
   const client = getObsClient();
   const bucket = process.env.OBS_BUCKET_NAME!;
 
+  console.log('[obsClient] Uploading buffer to OBS', {
+    bucket,
+    key,
+    size: buffer.length,
+  });
+
   await new Promise<void>((resolve, reject) => {
     client.putObject({
       Bucket: bucket,
@@ -36,8 +50,10 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
       Body: buffer,
     }, (error) => {
       if (error) {
+        console.error('[obsClient] OBS upload failed', { key, error });
         reject(error);
       } else {
+        console.log('[obsClient] OBS upload completed', { key });
         resolve();
       }
     });
@@ -47,6 +63,12 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
 export function createSignedUrl(key: string, expiresInSeconds = 3600) {
   const client = getObsClient();
   const bucket = process.env.OBS_BUCKET_NAME!;
+
+  console.log('[obsClient] Creating signed URL for object', {
+    bucket,
+    key,
+    expiresInSeconds,
+  });
 
   return client.createSignedUrlSync({
     Method: 'GET',

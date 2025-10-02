@@ -79,10 +79,29 @@ function collectJobEnv(params: CreateJobParams) {
     }
   }
 
+  console.log('[cciClient] Collected environment variables for converter job', {
+    jobId: params.jobId,
+    exportedVariables: envVars.map((variable) => variable.name),
+  });
+
   return envVars;
 }
 
 export async function createCciJob(params: CreateJobParams): Promise<CreateJobResult> {
+  console.log('[cciClient] Creating CCI job request', {
+    jobId: params.jobId,
+    sourceKey: params.sourceKey,
+    targetKey: params.targetKey,
+    callbackHost: (() => {
+      try {
+        const parsed = new URL(params.callbackUrl);
+        return `${parsed.protocol}//${parsed.host}`;
+      } catch (error) {
+        console.warn('[cciClient] Unable to parse callback URL while logging host', error);
+        return null;
+      }
+    })(),
+  });
   const accessKey = requireEnvWithFallback('HUAWEI_CLOUD_AK', ['OBS_ACCESS_KEY_ID']);
   const secretKey = requireEnvWithFallback('HUAWEI_CLOUD_SK', ['OBS_SECRET_ACCESS_KEY']);
   const projectId = requireEnv('HUAWEI_CLOUD_PROJECT_ID');
@@ -104,6 +123,20 @@ export async function createCciJob(params: CreateJobParams): Promise<CreateJobRe
   const imagePullSecret = process.env.CCI_IMAGE_PULL_SECRET;
 
   const jobName = buildJobName(params.jobId);
+  console.log('[cciClient] Converter job payload prepared', {
+    jobId: params.jobId,
+    jobName,
+    namespace,
+    region,
+    baseEndpoint,
+    image,
+    cpu,
+    memory,
+    backoffLimit,
+    ttlSecondsAfterFinished,
+    serviceAccountConfigured: Boolean(serviceAccount),
+    imagePullSecretConfigured: Boolean(imagePullSecret),
+  });
   const payload = {
     apiVersion: 'batch/v1',
     kind: 'Job',
@@ -170,6 +203,11 @@ export async function createCciJob(params: CreateJobParams): Promise<CreateJobRe
   const path = `/apis/batch/v1/namespaces/${encodeURIComponent(namespace)}/jobs`;
 
   try {
+    console.log('[cciClient] Sending job creation request to Huawei Cloud CCI', {
+      jobId: params.jobId,
+      path,
+      userAgentConfigured: Boolean(userAgent),
+    });
     await client.sendRequest({
       method: 'POST',
       url: path,
@@ -182,8 +220,10 @@ export async function createCciJob(params: CreateJobParams): Promise<CreateJobRe
       pathParams: {},
       data: payload as Record<string, any>,
     });
+    console.log('[cciClient] Job creation request accepted by API', { jobId: params.jobId });
   } catch (error) {
     const message = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('[cciClient] Job creation request failed', { jobId: params.jobId, message, error });
     throw new Error(`CCI job creation failed: ${message}`);
   }
 

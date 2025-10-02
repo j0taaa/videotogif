@@ -18,11 +18,19 @@ export function persistJob(job: Omit<JobRecord, 'createdAt'> & { createdAt?: num
   };
 
   jobs.set(record.id, record);
+  console.log('[jobStore] Persisted job', {
+    jobId: record.id,
+    status: record.status,
+    sourceKey: record.sourceKey,
+    targetKey: record.targetKey,
+    createdAt: record.createdAt,
+  });
 }
 
 export function updateJob(jobId: string, updates: Partial<JobRecord>) {
   const current = jobs.get(jobId);
   if (!current) {
+    console.warn('[jobStore] Attempted to update unknown job', { jobId, updates });
     throw new Error(`Job ${jobId} not found`);
   }
 
@@ -32,8 +40,17 @@ export function updateJob(jobId: string, updates: Partial<JobRecord>) {
   };
 
   jobs.set(jobId, next);
+  console.log('[jobStore] Updated job', {
+    jobId: next.id,
+    previousStatus: current.status,
+    nextStatus: next.status,
+    hasDownloadUrl: Boolean(next.downloadUrl),
+    hasErrorMessage: Boolean(next.errorMessage),
+  });
 }
 
 export function retrieveJobs(): JobRecord[] {
-  return Array.from(jobs.values()).sort((a, b) => b.createdAt - a.createdAt);
+  const sorted = Array.from(jobs.values()).sort((a, b) => b.createdAt - a.createdAt);
+  console.log('[jobStore] Retrieved job collection', { count: sorted.length });
+  return sorted;
 }

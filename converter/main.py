@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import tempfile
+from pathlib import Path
 from contextlib import suppress
 from typing import Optional
 
@@ -33,20 +34,57 @@ def create_signed_url(client: ObsClient, bucket: str, key: str, expires: int = 3
 
 
 def convert_to_gif(source: str, target: str) -> None:
-    command = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        source,
-        "-vf",
-        "fps=10,scale=480:-1:flags=lanczos",
-        "-loop",
-        "0",
-        target,
-    ]
-    process = subprocess.run(command, check=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if process.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
+    """Convert the video located at *source* into an animated GIF stored at *target*."""
+
+    source_path = Path(source).resolve()
+    target_path = Path(target).resolve()
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    palette_path = target_path.with_suffix(".palette.png")
+
+    def run_ffmpeg(command: list[str]) -> None:
+        process = subprocess.run(
+            command,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if process.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
+
+    try:
+        run_ffmpeg(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-y",
+                "-i",
+                str(source_path),
+                "-vf",
+                "fps=10,scale=480:-1:flags=lanczos,palettegen",
+                str(palette_path),
+            ]
+        )
+
+        run_ffmpeg(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-y",
+                "-i",
+                str(source_path),
+                "-i",
+                str(palette_path),
+                "-lavfi",
+                "fps=10,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
+                "-loop",
+                "0",
+                str(target_path),
+            ]
+        )
+    finally:
+        with suppress(FileNotFoundError):
+            palette_path.unlink()
 
 
 def notify_frontend(callback_url: Optional[str], payload: dict) -> None:

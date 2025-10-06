@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import ObsClient from 'esdk-obs-nodejs';
 
 let cachedClient: ObsClient | null = null;
@@ -37,10 +38,15 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
   const client = getObsClient();
   const bucket = process.env.OBS_BUCKET_NAME!;
 
+  const md5Digest = createHash('md5').update(buffer).digest();
+  const contentMd5Base64 = md5Digest.toString('base64');
+  const contentMd5Hex = md5Digest.toString('hex');
+
   console.log('[obsClient] Uploading buffer to OBS', {
     bucket,
     key,
     size: buffer.length,
+    contentMd5Base64,
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -48,14 +54,39 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
       Bucket: bucket,
       Key: key,
       Body: buffer,
-    }, (error) => {
+      ContentMD5: contentMd5Base64,
+    }, (error, result) => {
       if (error) {
         console.error('[obsClient] OBS upload failed', { key, error });
         reject(error);
-      } else {
-        console.log('[obsClient] OBS upload completed', { key });
-        resolve();
+        return;
       }
+
+      const status = (result as any)?.CommonMsg?.Status;
+      if (typeof status === 'number' && status >= 300) {
+        console.error('[obsClient] OBS upload returned error status', { key, status });
+        reject(new Error(`OBS upload failed with status ${status}`));
+        return;
+      }
+
+      const headers = (result as any)?.CommonMsg?.Headers ?? {};
+      const etagHeader =
+        (headers.etag ?? headers.ETag ?? headers.Etag ?? headers['x-obs-meta-etag']) ?? undefined;
+      const etag = Array.isArray(etagHeader) ? etagHeader[0] : etagHeader;
+      const normalizedEtag = typeof etag === 'string' ? etag.replace(/^"|"$/g, '').toLowerCase() : undefined;
+
+      if (normalizedEtag && normalizedEtag !== contentMd5Hex) {
+        console.error('[obsClient] OBS upload reported unexpected ETag checksum', {
+          key,
+          normalizedEtag,
+          expectedMd5Hex: contentMd5Hex,
+        });
+        reject(new Error('OBS reported a checksum mismatch for uploaded object.'));
+        return;
+      }
+
+      console.log('[obsClient] OBS upload completed', { key, status, etag: normalizedEtag });
+      resolve();
     });
   });
 }

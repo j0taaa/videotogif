@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { persistJob, retrieveJobs, updateJob } from '../../server/jobStore';
 import { dispatchConversionJob } from '../../server/jobDispatcher';
 import { uploadBufferToObs } from '../../server/obsClient';
+import { reconcileJobsWithCluster } from '../../server/jobStatusSynchronizer';
 
 export const config = {
   api: {
@@ -107,6 +108,8 @@ export default async function handler(
     contentType: req.headers['content-type'],
   });
   if (req.method === 'GET') {
+    const snapshot = retrieveJobs();
+    await reconcileJobsWithCluster(snapshot);
     const jobs = retrieveJobs();
     console.log('[api/jobs] Returning job list', { count: jobs.length });
     res.status(200).json(jobs);

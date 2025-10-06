@@ -39,52 +39,30 @@ def convert_to_gif(source: str, target: str) -> None:
     source_path = Path(source).resolve()
     target_path = Path(target).resolve()
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    palette_path = target_path.with_suffix(".palette.png")
 
-    def run_ffmpeg(command: list[str]) -> None:
-        process = subprocess.run(
-            command,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-        if process.returncode != 0:
-            raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
+    process = subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(source_path),
+            "-filter_complex",
+            "[0:v]fps=10,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=single[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5",
+            "-loop",
+            "0",
+            str(target_path),
+        ],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
 
-    try:
-        run_ffmpeg(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-y",
-                "-i",
-                str(source_path),
-                "-vf",
-                "fps=10,scale=480:-1:flags=lanczos,palettegen",
-                str(palette_path),
-            ]
-        )
-
-        run_ffmpeg(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-y",
-                "-i",
-                str(source_path),
-                "-i",
-                str(palette_path),
-                "-lavfi",
-                "fps=10,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
-                "-loop",
-                "0",
-                str(target_path),
-            ]
-        )
-    finally:
-        with suppress(FileNotFoundError):
-            palette_path.unlink()
+    if process.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
 
 
 def notify_frontend(callback_url: Optional[str], payload: dict) -> None:
@@ -109,6 +87,9 @@ def main() -> None:
     callback_url = os.getenv("CALLBACK_URL")
 
     client = ObsClient(access_key_id=access_key, secret_access_key=secret_key, server=endpoint)
+
+    download_url: Optional[str] = None
+    failure_notified = False
 
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -139,9 +120,21 @@ def main() -> None:
             if callback_url:
                 with suppress(Exception):
                     notify_frontend(callback_url, error_payload)
+                    failure_notified = True
             raise
 
         print(json.dumps(payload))
+    except Exception as error:
+        error_payload = {
+            "jobId": job_id,
+            "status": "failed",
+            "errorMessage": str(error),
+        }
+        if callback_url and not failure_notified:
+            with suppress(Exception):
+                notify_frontend(callback_url, error_payload)
+                failure_notified = True
+        raise
     finally:
         with suppress(Exception):
             client.close()

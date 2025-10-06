@@ -7,6 +7,7 @@ export type CreateJobParams = {
   sourceKey: string;
   targetKey: string;
   callbackUrl: string;
+  sourceSha256?: string;
 };
 
 export type CreateJobResult = {
@@ -53,6 +54,10 @@ function collectJobEnv(params: CreateJobParams) {
     { name: 'TARGET_OBJECT_KEY', value: params.targetKey },
     { name: 'CALLBACK_URL', value: params.callbackUrl },
   ];
+
+  if (params.sourceSha256) {
+    envVars.push({ name: 'SOURCE_OBJECT_SHA256', value: params.sourceSha256 });
+  }
 
   const passthroughVars = [
     'OBS_ENDPOINT',

@@ -3,6 +3,7 @@ export type JobRecord = {
   status: 'pending' | 'running' | 'failed' | 'completed';
   sourceKey: string;
   targetKey: string;
+  sourceSha256?: string;
   downloadUrl?: string;
   errorMessage?: string;
   cciJobName?: string;
@@ -23,6 +24,7 @@ export function persistJob(job: Omit<JobRecord, 'createdAt'> & { createdAt?: num
     status: record.status,
     sourceKey: record.sourceKey,
     targetKey: record.targetKey,
+    hasSourceSha256: Boolean(record.sourceSha256),
     createdAt: record.createdAt,
   });
 }

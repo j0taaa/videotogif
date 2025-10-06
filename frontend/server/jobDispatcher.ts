@@ -5,6 +5,7 @@ type DispatchOptions = {
   jobId: string;
   sourceKey: string;
   targetKey: string;
+  sourceSha256?: string;
 };
 
 const CALLBACK_PATH = '/api/job-status';
@@ -17,6 +18,7 @@ export async function dispatchConversionJob(options: DispatchOptions) {
     sourceKey: options.sourceKey,
     targetKey: options.targetKey,
     callbackUrl,
+    hasSourceSha256: Boolean(options.sourceSha256),
     publicBaseUrlConfigured: Boolean(process.env.PUBLIC_BASE_URL),
   });
 
@@ -25,6 +27,7 @@ export async function dispatchConversionJob(options: DispatchOptions) {
       jobId: options.jobId,
       sourceKey: options.sourceKey,
       targetKey: options.targetKey,
+      sourceSha256: options.sourceSha256,
       callbackUrl,
     });
 

@@ -53,7 +53,7 @@ def convert_to_gif(source: str, target: str) -> None:
                 "-i",
                 str(source_path),
                 "-vf",
-                "fps=10,scale=480:-1:flags=lanczos",
+                "fps=10,scale=480:-1:flags=lanczos,palettegen",
                 str(palette_path),
             ],
             check=False,

@@ -40,29 +40,61 @@ def convert_to_gif(source: str, target: str) -> None:
     target_path = Path(target).resolve()
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    process = subprocess.run(
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-i",
-            str(source_path),
-            "-vf",
-            "fps=10,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5",
-            "-loop",
-            "0",
-            str(target_path),
-        ],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        palette_path = Path(tmpdir, "palette.png")
 
-    if process.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed with code {process.returncode}: {process.stdout}")
+        palette_process = subprocess.run(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(source_path),
+                "-vf",
+                "fps=10,scale=480:-1:flags=lanczos",
+                str(palette_path),
+            ],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+
+        if palette_process.returncode != 0:
+            raise RuntimeError(
+                "ffmpeg palette generation failed "
+                f"with code {palette_process.returncode}: {palette_process.stdout}"
+            )
+
+        gif_process = subprocess.run(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(source_path),
+                "-i",
+                str(palette_path),
+                "-filter_complex",
+                "fps=10,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
+                "-loop",
+                "0",
+                str(target_path),
+            ],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+
+        if gif_process.returncode != 0:
+            raise RuntimeError(
+                f"ffmpeg gif conversion failed with code {gif_process.returncode}: {gif_process.stdout}"
+            )
 
 
 def notify_frontend(callback_url: Optional[str], payload: dict) -> None:

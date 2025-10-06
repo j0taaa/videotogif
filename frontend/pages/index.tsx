@@ -5,6 +5,7 @@ interface ConversionJob {
   id: string;
   status: 'pending' | 'running' | 'failed' | 'completed';
   sourceKey: string;
+  sourceSha256?: string;
   targetKey?: string;
   downloadUrl?: string;
   errorMessage?: string;

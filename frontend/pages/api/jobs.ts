@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { readFile, unlink } from 'fs/promises';
 import formidable from 'formidable';
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -130,6 +130,7 @@ export default async function handler(
     }
 
     const timestamp = Date.now();
+    const sourceSha256 = createHash('sha256').update(buffer).digest('hex');
     const sourceKey = `${process.env.OBS_UPLOAD_PREFIX ?? 'uploads/'}${timestamp}-${filename}`;
     const targetKey = `${process.env.OBS_OUTPUT_PREFIX ?? 'gifs/'}${timestamp}-${filename.replace(/\.[^.]+$/, '')}.gif`;
 
@@ -139,6 +140,7 @@ export default async function handler(
       sourceKey,
       targetKey,
       bufferSize: buffer.length,
+      sourceSha256,
     });
 
     await uploadBufferToObs(buffer, sourceKey);
@@ -152,6 +154,7 @@ export default async function handler(
       status: 'pending',
       sourceKey,
       targetKey,
+      sourceSha256,
       createdAt: timestamp,
     });
 
@@ -161,6 +164,7 @@ export default async function handler(
       jobId,
       sourceKey,
       targetKey,
+      sourceSha256,
     });
 
     console.log('[api/jobs] Conversion job dispatched', { jobId, sourceKey, targetKey });

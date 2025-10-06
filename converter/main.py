@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -31,6 +32,16 @@ def upload_object(client: ObsClient, bucket: str, key: str, path: str) -> None:
 def create_signed_url(client: ObsClient, bucket: str, key: str, expires: int = 3600) -> str:
     resp = client.createSignedUrl("GET", bucket, key, expires=expires)
     return resp.signedUrl
+
+
+def compute_sha256(path: str) -> str:
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            if not chunk:
+                break
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 
 def convert_to_gif(source: str, target: str) -> None:
@@ -103,6 +114,41 @@ def main() -> None:
             target_path = os.path.join(tmpdir, "target.gif")
 
             download_object(client, bucket, source_key, source_path)
+
+            download_size = Path(source_path).stat().st_size
+            source_sha256_env = os.getenv("SOURCE_OBJECT_SHA256")
+
+            if source_sha256_env:
+                downloaded_sha256 = compute_sha256(source_path)
+                if downloaded_sha256 != source_sha256_env:
+                    raise RuntimeError(
+                        "Downloaded object checksum mismatch. "
+                        f"Expected {source_sha256_env}, got {downloaded_sha256}."
+                    )
+
+                print(
+                    json.dumps(
+                        {
+                            "event": "source_checksum_verified",
+                            "jobId": job_id,
+                            "sourceKey": source_key,
+                            "sha256": downloaded_sha256,
+                            "size": download_size,
+                        }
+                    )
+                )
+            else:
+                print(
+                    json.dumps(
+                        {
+                            "event": "source_checksum_unavailable",
+                            "jobId": job_id,
+                            "sourceKey": source_key,
+                            "size": download_size,
+                        }
+                    )
+                )
+
             convert_to_gif(source_path, target_path)
             upload_object(client, bucket, target_key, target_path)
 

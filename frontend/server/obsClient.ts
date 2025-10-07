@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { Readable } from 'stream';
 import ObsClient from 'esdk-obs-nodejs';
 
 let cachedClient: ObsClient | null = null;
@@ -50,10 +51,11 @@ export async function uploadBufferToObs(buffer: Buffer, key: string) {
   });
 
   await new Promise<void>((resolve, reject) => {
+    const bodyStream = Readable.from(buffer);
     client.putObject({
       Bucket: bucket,
       Key: key,
-      Body: buffer,
+      Body: bodyStream,
       ContentMD5: contentMd5Base64,
     }, (error, result) => {
       if (error) {

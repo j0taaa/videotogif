@@ -153,47 +153,45 @@ export default function FriendsPage() {
       <style jsx>{`
         :global(body) {
           margin: 0;
-          background: #0b1220;
-          color: #e2e8f0;
+          background: radial-gradient(circle at 20% 20%, rgba(188, 227, 255, 0.3), transparent 32%),
+            linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+          color: #0f172a;
           font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         .page {
           min-height: 100vh;
-          background: radial-gradient(120% 120% at 20% 0%, rgba(94, 234, 212, 0.08), transparent 55%),
-            radial-gradient(120% 120% at 90% 0%, rgba(168, 85, 247, 0.08), transparent 55%),
-            linear-gradient(180deg, #0b1220 0%, #0b1220 100%);
-          padding: 64px 24px 72px;
+          padding: 56px 20px 72px;
           display: flex;
           justify-content: center;
         }
 
         .shell {
           width: 100%;
-          max-width: 1080px;
+          max-width: 1040px;
           display: grid;
-          gap: 32px;
+          gap: 28px;
         }
 
         .page-header {
           display: flex;
           justify-content: space-between;
-          gap: 24px;
+          gap: 20px;
           align-items: center;
           flex-wrap: wrap;
         }
 
         .heading h1 {
           margin: 6px 0 10px;
-          font-size: clamp(2rem, 4vw, 2.6rem);
+          font-size: clamp(2rem, 4vw, 2.4rem);
           letter-spacing: -0.02em;
         }
 
         .lede {
           margin: 0;
           max-width: 620px;
-          color: #cbd5e1;
-          line-height: 1.6;
+          color: #475569;
+          line-height: 1.55;
         }
 
         .eyebrow {
@@ -215,7 +213,7 @@ export default function FriendsPage() {
           display: grid;
           gap: 8px;
           align-items: center;
-          color: #cbd5e1;
+          color: #475569;
         }
 
         .availability .label {
@@ -227,47 +225,47 @@ export default function FriendsPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 6px 10px 6px 8px;
+          padding: 8px 12px;
           border-radius: 999px;
-          background: #0f172a;
-          border: 1px solid rgba(148, 163, 184, 0.35);
-          color: #cbd5e1;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          color: #0f172a;
           cursor: pointer;
           transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-          min-width: 148px;
+          min-width: 150px;
         }
 
         .switch:hover {
-          border-color: rgba(148, 163, 184, 0.6);
-          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.45);
+          border-color: #cbd5e1;
+          box-shadow: 0 8px 20px rgba(148, 163, 184, 0.25);
         }
 
         .switch.on {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
-          border-color: rgba(52, 211, 153, 0.5);
-          color: #a7f3d0;
+          background: linear-gradient(90deg, #f0f9ff 0%, #ecfeff 100%);
+          border-color: #bae6fd;
+          color: #0f172a;
         }
 
         .switch.off {
-          background: rgba(15, 23, 42, 0.85);
-          border-color: rgba(148, 163, 184, 0.35);
-          color: #e2e8f0;
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          color: #0f172a;
         }
 
         .switch-thumb {
-          width: 28px;
-          height: 28px;
+          width: 24px;
+          height: 24px;
           border-radius: 999px;
-          background: radial-gradient(circle at 30% 30%, #ffffff, #cbd5e1 65%);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 6px 18px rgba(0, 0, 0, 0.25);
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
           transform: translateX(0);
           transition: transform 0.2s ease;
         }
 
         .switch.on .switch-thumb {
-          transform: translateX(10px);
-          background: radial-gradient(circle at 25% 25%, #ecfeff, #34d399 70%);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 30px rgba(34, 197, 94, 0.25);
+          transform: translateX(6px);
+          border-color: #bae6fd;
         }
 
         .switch-copy {
@@ -279,20 +277,24 @@ export default function FriendsPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 14px;
+          padding: 9px 14px;
           border-radius: 10px;
-          background: linear-gradient(135deg, rgba(94, 234, 212, 0.12), rgba(59, 130, 246, 0.18));
-          border: 1px solid rgba(59, 130, 246, 0.45);
-          color: #e2f3ff;
+          background: #0f172a;
+          border: 1px solid #0f172a;
+          color: #f8fafc;
           font-weight: 600;
           cursor: pointer;
-          transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
         .add-friend:hover {
           transform: translateY(-1px);
-          box-shadow: 0 12px 30px rgba(59, 130, 246, 0.25);
-          border-color: rgba(59, 130, 246, 0.6);
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+          background: #111827;
+        }
+
+        .add-friend:active {
+          transform: translateY(0);
         }
 
         .plus {
@@ -302,18 +304,17 @@ export default function FriendsPage() {
 
         .content {
           display: grid;
-          grid-template-columns: 1fr 320px;
-          gap: 20px;
+          grid-template-columns: 1fr 300px;
+          gap: 18px;
         }
 
         .friends,
         .sidebar {
-          background: rgba(15, 23, 42, 0.75);
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          border-radius: 16px;
-          padding: 18px 18px 20px;
-          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 16px 16px 18px;
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
         }
 
         .section-header {
@@ -321,31 +322,31 @@ export default function FriendsPage() {
           justify-content: space-between;
           align-items: center;
           gap: 12px;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
 
         h2 {
           margin: 2px 0 0;
-          font-size: 1.1rem;
+          font-size: 1.05rem;
         }
 
         .badge {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 4px 10px;
+          padding: 3px 10px;
           border-radius: 999px;
           font-size: 0.85rem;
           letter-spacing: 0.02em;
-          border: 1px solid rgba(148, 163, 184, 0.35);
-          background: rgba(148, 163, 184, 0.08);
-          color: #cbd5e1;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #475569;
         }
 
         .badge.accent {
-          border-color: rgba(94, 234, 212, 0.45);
-          background: rgba(45, 212, 191, 0.12);
-          color: #99f6e4;
+          border-color: #dbeafe;
+          background: #eff6ff;
+          color: #1e3a8a;
         }
 
         .badge.subtle {
@@ -354,37 +355,37 @@ export default function FriendsPage() {
 
         .friend-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+          gap: 10px;
         }
 
         .friend-card {
           display: grid;
-          grid-template-columns: 52px 1fr;
+          grid-template-columns: 48px 1fr;
           gap: 10px;
           padding: 12px;
-          border-radius: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(17, 24, 39, 0.9));
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
         }
 
         .friend-card:hover {
-          border-color: rgba(94, 234, 212, 0.4);
-          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+          border-color: #cbd5e1;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
           transform: translateY(-1px);
         }
 
         .avatar {
           width: 48px;
           height: 48px;
-          border-radius: 12px;
+          border-radius: 10px;
           display: grid;
           place-items: center;
           font-weight: 700;
-          color: #e2e8f0;
-          background: linear-gradient(145deg, #1e293b, #0f172a);
-          border: 1px solid rgba(148, 163, 184, 0.25);
+          color: #0f172a;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
           position: relative;
         }
 
@@ -396,16 +397,16 @@ export default function FriendsPage() {
           width: 10px;
           height: 10px;
           border-radius: 999px;
-          border: 2px solid #0f172a;
-          background: #cbd5e1;
+          border: 2px solid #ffffff;
+          background: #e2e8f0;
         }
 
         .avatar.online::after {
-          background: #34d399;
+          background: #22c55e;
         }
 
         .avatar.offline::after {
-          background: #94a3b8;
+          background: #cbd5e1;
         }
 
         .friend-body {
@@ -416,18 +417,18 @@ export default function FriendsPage() {
         .friend-meta {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
         }
 
         .friend-meta h3 {
           margin: 0;
           font-size: 1rem;
-          color: #f8fafc;
+          color: #0f172a;
         }
 
         .subtitle {
           margin: 0;
-          color: #cbd5e1;
+          color: #475569;
           font-size: 0.95rem;
           line-height: 1.4;
         }
@@ -435,26 +436,26 @@ export default function FriendsPage() {
         .status-pill {
           display: inline-flex;
           align-items: center;
-          padding: 3px 8px;
+          padding: 2px 8px;
           border-radius: 999px;
           font-size: 0.8rem;
           letter-spacing: 0.02em;
-          border: 1px solid rgba(148, 163, 184, 0.25);
+          border: 1px solid #e2e8f0;
         }
 
         .status-pill.online {
-          background: rgba(34, 197, 94, 0.12);
-          color: #86efac;
-          border-color: rgba(34, 197, 94, 0.35);
+          background: #ecfdf3;
+          color: #166534;
+          border-color: #bbf7d0;
         }
 
         .status-pill.offline {
-          background: rgba(148, 163, 184, 0.1);
-          color: #cbd5e1;
+          background: #f8fafc;
+          color: #475569;
         }
 
         .sidebar h2 {
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         .debt-list {
@@ -469,42 +470,42 @@ export default function FriendsPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.16);
-          background: rgba(15, 23, 42, 0.7);
+          padding: 9px 10px;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
         }
 
         .debt-title {
           margin: 0;
           font-size: 0.95rem;
-          color: #e2e8f0;
+          color: #0f172a;
         }
 
         .debt-date {
           margin: 2px 0 0;
-          font-size: 0.85rem;
-          color: #94a3b8;
+          font-size: 0.83rem;
+          color: #64748b;
         }
 
         .debt-amount {
           font-weight: 700;
-          font-size: 0.95rem;
+          font-size: 0.93rem;
           padding: 4px 8px;
           border-radius: 8px;
-          border: 1px solid rgba(148, 163, 184, 0.2);
+          border: 1px solid #e2e8f0;
         }
 
         .debt-amount.paid {
-          color: #86efac;
-          border-color: rgba(34, 197, 94, 0.35);
-          background: rgba(34, 197, 94, 0.12);
+          color: #166534;
+          border-color: #bbf7d0;
+          background: #ecfdf3;
         }
 
         .debt-amount.received {
-          color: #bfdbfe;
-          border-color: rgba(59, 130, 246, 0.35);
-          background: rgba(59, 130, 246, 0.12);
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+          background: #eff6ff;
         }
 
         @media (max-width: 960px) {
